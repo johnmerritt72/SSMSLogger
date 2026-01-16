@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Commands package="SSMSLoggerPackage" xmlns="http://schemas.microsoft.com/VisualStudio/2005/CommandTable">
+  <Extern href="stdidcmd.h" />
+  <Extern href="vsshlids.h" />
+  <Commands>
+    <Button guid="{3a408c50-c8c4-4930-b09e-b938b9e9ee39}" id="0x0100" priority="0x0100" type="Button">
+      <Parent guid="guidVSStd97" id="cmdidToolsMenu" />
+      <Icon guid="guidVSStd97" id="cmdidToolsMenu" />
+      <Strings>
+        <ButtonText>SSMSLogger Options</ButtonText>
+      </Strings>
+    </Button>
+  </Commands>
+  <Bitmaps>
+    <Bitmap guid="{3a408c50-c8c4-4930-b09e-b938b9e9ee39}" href="Resources\SSMSLogger_32.bmp" usedList="0x0100" />
+  </Bitmaps>
+</Commands>
