@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using System.Reflection;
 
 namespace SSMSLogger.Options
 {
@@ -9,6 +10,7 @@ namespace SSMSLogger.Options
         private CheckBox chkCreateDailyLogFiles;
         private Label lblLogFilePath;
         private Label lblCreateDailyLogFiles;
+        private Label lblVersion;
 
         public GeneralOptionsControl()
         {
@@ -23,13 +25,29 @@ namespace SSMSLogger.Options
             lblCreateDailyLogFiles = new Label { Text = "Create Daily Log Files:", AutoSize = true, Top = 70, Left = 10 };
             chkCreateDailyLogFiles = new CheckBox { Top = 90, Left = 10 };
 
+            // Version label
+            lblVersion = new Label
+            {
+                AutoSize = true,
+                Top = 120,
+                Left = 10,
+                Text = $"SSMSLogger Version: {GetVersion()}"
+            };
+
             Controls.Add(lblLogFilePath);
             Controls.Add(txtLogFilePath);
             Controls.Add(lblCreateDailyLogFiles);
             Controls.Add(chkCreateDailyLogFiles);
+            Controls.Add(lblVersion);
 
             this.Width = 350;
-            this.Height = 130;
+            this.Height = 150;
+        }
+
+        private string GetVersion()
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            return version != null ? version.ToString() : "Unknown";
         }
 
         public string LogFilePath

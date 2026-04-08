@@ -33,7 +33,7 @@ namespace SSMSLogger
     /// </remarks>
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [Guid(SSMSLoggerPackage.PackageGuidString)]
-    [ProvideMenuResource(1000, 0)]
+    [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(SSMSLogger.Options.GeneralOptionsPage), "SSMSLogger", "General", 0, 0, true)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.ShellInitialized_string, PackageAutoLoadFlags.BackgroundLoad)]
 
@@ -47,7 +47,7 @@ namespace SSMSLogger
 
         private DTE2 _dte;
         private CommandEvents _queryCommandEvents;
-        private const int CommandId = 0x0100;
+        private const int OpenLogCommandId = 0x0200;
         private static readonly Guid CommandSet = new Guid(PackageGuidString);
 
         #region Package Members
@@ -61,46 +61,67 @@ namespace SSMSLogger
         /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            //MessageBox.Show(
-            //    "SSMSLoggerPackage InitializeAsync called.",
-            //    "SSMSLogger Extension",
-            //    MessageBoxButtons.OK,
-            //    MessageBoxIcon.Information
-            //);
-            //LogDiagnostic("InitializeAsync: Entry");
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             try
             {
                 _dte = (DTE2)await GetServiceAsync(typeof(DTE));
-                //LogDiagnostic($"InitializeAsync: DTE2 is {(_dte != null ? "not null" : "null")}");
                 if (_dte != null)
                 {
                     Events2 events2 = (Events2)_dte.Events;
                     _queryCommandEvents = events2.get_CommandEvents(null, 0);
                     _queryCommandEvents.BeforeExecute += QueryCommandEvents_BeforeExecute;
-                    //LogDiagnostic("InitializeAsync: Event handler attached");
                 }
                 OleMenuCommandService commandService = await GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService;
                 if (commandService != null)
                 {
-                    var menuCommandID = new CommandID(CommandSet, CommandId);
-                    var menuItem = new MenuCommand(ShowOptions, menuCommandID);
-                    commandService.AddCommand(menuItem);
-                    //LogDiagnostic("InitializeAsync: Menu command added");
+                    var openLogCommandID = new CommandID(CommandSet, OpenLogCommandId);
+                    var openLogMenuItem = new MenuCommand(OpenSqlLogFile, openLogCommandID);
+                    commandService.AddCommand(openLogMenuItem);
                 }
             }
             catch (Exception ex)
             {
                 LogError(ex, "InitializeAsync");
             }
-            //LogDiagnostic("InitializeAsync: Exit");
+        }
+
+        private void OpenSqlLogFile(object sender, EventArgs e)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            GeneralOptionsPage options = (GeneralOptionsPage)GetDialogPage(typeof(GeneralOptionsPage));
+            string logFilePath = options.LogFilePath;
+            if (options.CreateDailyLogFiles)
+            {
+                string dir = Path.GetDirectoryName(logFilePath);
+                string file = Path.GetFileNameWithoutExtension(logFilePath);
+                string ext = Path.GetExtension(logFilePath);
+                string datedFile = $"{file}_{DateTime.Now:yyyy-MM-dd}{ext}";
+                logFilePath = Path.Combine(dir, datedFile);
+            }
+            try
+            {
+                if (!File.Exists(logFilePath))
+                {
+                    MessageBox.Show($"Log file not found: {logFilePath}", "SSMSLogger", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                _dte.ItemOperations.OpenFile(logFilePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to open log file: {ex.Message}", "SSMSLogger", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void LogError(Exception ex, string context)
         {
             try
             {
-                string errorLogPath = @"C:\\temp\\SSMSLogger_error.log";
+                string errorLogDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "SSMSLogger");
+                Directory.CreateDirectory(errorLogDir);
+                string errorLogPath = Path.Combine(errorLogDir, "error.log");
                 string message = $"[{DateTime.Now}] Context: {context}\r\n{ex}\r\n----------------------\r\n";
                 System.IO.File.AppendAllText(errorLogPath, message);
             }
@@ -126,17 +147,6 @@ namespace SSMSLogger
                 System.IO.File.AppendAllText(logFilePath, fullMessage);
             }
             catch { /* Swallow any errors in diagnostic logging */ }
-        }
-
-        private void ShowOptions(object sender, EventArgs e)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            MessageBox.Show(
-                "To configure SSMSLogger options, go to Tools > Options > SSMSLogger.",
-                "SSMSLogger Options",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information
-            );
         }
 
         private void QueryCommandEvents_BeforeExecute(string Guid, int ID, object CustomIn, object CustomOut, ref bool CancelDefault)

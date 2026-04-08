@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File \"c:\\\\Code\\\\SSMSLoggingExtension\\\\find-ssmslogger.ps1\")",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File \"c:\\\\Code\\\\SSMSLoggingExtension\\\\find-sku.ps1\")",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File \"c:\\\\Code\\\\SSMSLoggingExtension\\\\find-orphan.ps1\")"
+    ]
+  }
+}
