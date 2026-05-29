@@ -5,9 +5,12 @@ SSMSLogger is an extension for SQL Server Management Studio (SSMS) that automati
 ## Features
 - Logs every SQL statement executed from SSMS query windows.
 - Configurable log file location via the Options UI.
-- Option to create a new log file for each day (daily log rotation).
+- Three log file modes (mutually exclusive):
+  - **Single log file** — all activity goes to one file.
+  - **New log file daily** — a new file is created each day (`SSMSlog_yyyy-MM-dd.log`).
+  - **New log file by size** — when the active file reaches a configurable size (KB), it is archived to `SSMSlog-yyyy-MM-dd.log` and a fresh file is started. If that dated name already exists (multiple rollovers in one day), a numeric suffix is added (`SSMSlog-yyyy-MM-dd-1.log`).
 - Simple menu entry under the Tools menu for quick access to options.
-- No external dependencies�runs entirely within SSMS as a VSIX extension.
+- No external dependencies�runs entirely within SSMS as a VSIX extension.
 
 ## Installation
 1. Build the solution to generate the `.vsix` file.
@@ -17,7 +20,8 @@ SSMSLogger is an extension for SQL Server Management Studio (SSMS) that automati
 ## Configuration
 - Go to `Tools > Options > SSMSLogger > General` in SSMS.
 - Set the desired log file location (e.g., `C:\temp\SSMSlog.log`).
-- Optionally enable daily log files.
+- Choose a **Log File Mode**: Single log file, New log file daily, or New log file by size.
+- When using **New log file by size**, set **Max Log File Size (KB)** (default `5120`, i.e. 5 MB) to control when the active file is archived and a new one started.
 
 ## Usage
 - Execute any SQL query in a query window.

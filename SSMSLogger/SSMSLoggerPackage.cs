@@ -89,15 +89,7 @@ namespace SSMSLogger
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             GeneralOptionsPage options = (GeneralOptionsPage)GetDialogPage(typeof(GeneralOptionsPage));
-            string logFilePath = options.LogFilePath;
-            if (options.CreateDailyLogFiles)
-            {
-                string dir = Path.GetDirectoryName(logFilePath);
-                string file = Path.GetFileNameWithoutExtension(logFilePath);
-                string ext = Path.GetExtension(logFilePath);
-                string datedFile = $"{file}_{DateTime.Now:yyyy-MM-dd}{ext}";
-                logFilePath = Path.Combine(dir, datedFile);
-            }
+            string logFilePath = ResolveLogFilePath(options);
             try
             {
                 if (!File.Exists(logFilePath))
@@ -132,21 +124,77 @@ namespace SSMSLogger
         {
             try
             {
-                string logFilePath = options.LogFilePath;
-                if (options.CreateDailyLogFiles)
-                {
-                    string dir = Path.GetDirectoryName(logFilePath);
-                    string file = Path.GetFileNameWithoutExtension(logFilePath);
-                    string ext = Path.GetExtension(logFilePath);
-                    string datedFile = $"{file}_{DateTime.Now:yyyy-MM-dd}{ext}";
-                    logFilePath = Path.Combine(dir, datedFile);
-                }
+                string logFilePath = ResolveLogFilePath(options);
                 Directory.CreateDirectory(Path.GetDirectoryName(logFilePath));
+                RollOverBySizeIfNeeded(logFilePath, options);
                 string logdate = showDateTime ? $"[{DateTime.Now}] " : "";
                 string fullMessage = $"{logdate}{message}\r\n";
                 System.IO.File.AppendAllText(logFilePath, fullMessage);
             }
             catch { /* Swallow any errors in diagnostic logging */ }
+        }
+
+        /// <summary>
+        /// Resolves the effective log file path for the configured mode. In Daily mode the
+        /// active file is dated with an underscore; in Single and Size modes the configured
+        /// path is used as-is (Size mode archives that file when it grows too large).
+        /// </summary>
+        private string ResolveLogFilePath(GeneralOptionsPage options)
+        {
+            string logFilePath = options.LogFilePath;
+            if (options.LogFileMode == Options.LogFileMode.Daily)
+            {
+                string dir = Path.GetDirectoryName(logFilePath);
+                string file = Path.GetFileNameWithoutExtension(logFilePath);
+                string ext = Path.GetExtension(logFilePath);
+                string datedFile = $"{file}_{DateTime.Now:yyyy-MM-dd}{ext}";
+                logFilePath = Path.Combine(dir, datedFile);
+            }
+            return logFilePath;
+        }
+
+        /// <summary>
+        /// When Size mode is active and the file has reached the configured size, renames the
+        /// active file to SSMSlog-yyyy-MM-dd.log (today's date) so the next write starts fresh.
+        /// A numeric suffix (-1, -2, ...) is appended if that name already exists, so no archive
+        /// is ever overwritten. Rename failures are logged and otherwise ignored.
+        /// </summary>
+        private void RollOverBySizeIfNeeded(string logFilePath, GeneralOptionsPage options)
+        {
+            if (options.LogFileMode != Options.LogFileMode.Size)
+            {
+                return;
+            }
+            try
+            {
+                if (!File.Exists(logFilePath))
+                {
+                    return;
+                }
+                long maxBytes = (long)Math.Max(1, options.MaxLogFileSizeKB) * 1024;
+                if (new FileInfo(logFilePath).Length < maxBytes)
+                {
+                    return;
+                }
+
+                string dir = Path.GetDirectoryName(logFilePath);
+                string file = Path.GetFileNameWithoutExtension(logFilePath);
+                string ext = Path.GetExtension(logFilePath);
+                string datePart = DateTime.Now.ToString("yyyy-MM-dd");
+
+                string archivePath = Path.Combine(dir, $"{file}-{datePart}{ext}");
+                int counter = 1;
+                while (File.Exists(archivePath))
+                {
+                    archivePath = Path.Combine(dir, $"{file}-{datePart}-{counter}{ext}");
+                    counter++;
+                }
+                File.Move(logFilePath, archivePath);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, "RollOverBySizeIfNeeded");
+            }
         }
 
         private void QueryCommandEvents_BeforeExecute(string Guid, int ID, object CustomIn, object CustomOut, ref bool CancelDefault)

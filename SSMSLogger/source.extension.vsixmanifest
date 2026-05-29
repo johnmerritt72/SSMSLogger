@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="SSMSLogger.2e7e2c7a-7b2a-4e2a-9e2a-8e2a7e2a7e2a" Version="1.4.7" Language="en-US" Publisher="Allied Universal Electronic Monitoring" />
+    <Identity Id="SSMSLogger.2e7e2c7a-7b2a-4e2a-9e2a-8e2a7e2a7e2a" Version="1.4.8" Language="en-US" Publisher="Allied Universal Electronic Monitoring" />
     <DisplayName>SSMSLogger</DisplayName>
     <Description xml:space="preserve">Extension to log all SQL execution to a logfile.</Description>
     <Tags>ssms</Tags>
